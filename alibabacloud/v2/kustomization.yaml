@@ -1,0 +1,6 @@
+resources:
+- ./istio-manifests/allow-egress-googleapis.yaml
+- ./istio-manifests/frontend-gateway.yaml
+- ./istio-manifests/frontend.yaml
+- ./productcatalogservice-dr.yaml
+- ./productcatalogservice-vs.yaml
