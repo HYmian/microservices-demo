@@ -1,6 +1,44 @@
 resources:
-- ./istio-manifests/allow-egress-googleapis.yaml
-- ./istio-manifests/frontend-gateway.yaml
-- ./istio-manifests/frontend.yaml
-- ./productcatalogservice-dr.yaml
-- ./productcatalogservice-vs.yaml
+- productcatalogservice-v2.yaml 
+images:
+- name: productcatalogservice
+  newName: registry.cn-shenzhen.aliyuncs.com/ymian/productcatalogservice:v1.0.0
+configMapGenerator:
+- name: products
+  files:
+  - products.json
+patches:
+- patch: |-
+    - op: replace
+      path: /metadata/name
+      value: productcatalogservice-v2
+    - op: add
+      path: /spec/selector/matchLabels/version
+      value: v2
+    - op: add
+      path: /spec/template/metadata/labels/version
+      value: v2
+  target:
+    kind: Deployment
+    name: "productcatalogservice"
+- patch: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: productcatalogservice
+    spec:
+      template:
+        spec:
+          containers:
+          - name: server
+            volumeMounts:
+            - mountPath: /src/products.json
+              name: products
+              subPath: products.json
+          volumes:
+          - name: products
+            configMap:
+              name: products
+  target:
+    kind: Deployment
+    name: "productcatalogservice"
