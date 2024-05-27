@@ -12,20 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# https://mcr.microsoft.com/v2/dotnet/sdk/tags/list
-FROM mcr.microsoft.com/dotnet/sdk:6.0.101 as builder
+# https://mcr.microsoft.com/product/dotnet/sdk
+FROM mcr.microsoft.com/dotnet/sdk:8.0.204@sha256:03476e8b974ca8e5084bf63742d85f04a5f53df0ae37c82d31bae228eb297e6c as builder
 WORKDIR /app
 COPY cartservice.csproj .
-RUN dotnet restore cartservice.csproj -r linux-musl-x64
+RUN dotnet restore cartservice.csproj \
+    -r linux-musl-x64
 COPY . .
-RUN dotnet publish cartservice.csproj -p:PublishSingleFile=true -r linux-musl-x64 --self-contained true -p:PublishTrimmed=True -p:TrimMode=Link -c release -o /cartservice --no-restore
+RUN dotnet publish cartservice.csproj \
+    -p:PublishSingleFile=true \
+    -r linux-musl-x64 \
+    --self-contained true \
+    -p:PublishTrimmed=True \
+    -p:TrimMode=Full \
+    -c release \
+    -o /cartservice \
+    --no-restore
 
-# https://mcr.microsoft.com/v2/dotnet/runtime-deps/tags/list
-FROM mcr.microsoft.com/dotnet/runtime-deps:6.0.1-alpine3.14-amd64
-RUN GRPC_HEALTH_PROBE_VERSION=v0.4.6 && \
-    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
-    chmod +x /bin/grpc_health_probe
+# https://mcr.microsoft.com/product/dotnet/runtime-deps
+FROM mcr.microsoft.com/dotnet/runtime-deps:8.0.4-alpine3.18-amd64@sha256:1fd5e6015ca8b6778a19339a921363370c2ab5cf91dc3421df5f29f4caa07440
+
 WORKDIR /app
 COPY --from=builder /cartservice .
-ENV ASPNETCORE_URLS http://*:7070
+EXPOSE 7070
+ENV DOTNET_EnableDiagnostics=0 \
+    ASPNETCORE_HTTP_PORTS=7070
+USER 1000
 ENTRYPOINT ["/app/cartservice"]
